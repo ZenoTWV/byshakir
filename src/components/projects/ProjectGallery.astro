@@ -116,6 +116,10 @@ const allImages = [heroImage, ...images];
 
   let currentIndex = 0;
   const images = Array.from(galleryItems).map(item => item.dataset.src);
+  let isWheelThrottled = false;
+  let pointerStartX = 0;
+  let pointerStartY = 0;
+  let pointerActive = false;
 
   function openLightbox(index) {
     currentIndex = index;
@@ -159,6 +163,57 @@ const allImages = [heroImage, ...images];
   lightboxClose?.addEventListener('click', closeLightbox);
   lightboxNext?.addEventListener('click', nextImage);
   lightboxPrev?.addEventListener('click', prevImage);
+
+  // Horizontal wheel/trackpad navigation
+  function handleWheel(event) {
+    if (!lightbox || lightbox.classList.contains('hidden')) return;
+
+    const horizontal = Math.abs(event.deltaX);
+    const vertical = Math.abs(event.deltaY);
+    if (horizontal <= vertical || horizontal < 10) return;
+
+    event.preventDefault();
+    if (isWheelThrottled) return;
+
+    isWheelThrottled = true;
+    if (event.deltaX > 0) {
+      nextImage();
+    } else {
+      prevImage();
+    }
+    setTimeout(() => {
+      isWheelThrottled = false;
+    }, 350);
+  }
+
+  lightbox?.addEventListener('wheel', handleWheel, { passive: false });
+
+  // Swipe/drag navigation for touch and pointer devices
+  function handlePointerDown(event) {
+    if (!lightbox || lightbox.classList.contains('hidden')) return;
+    pointerActive = true;
+    pointerStartX = event.clientX;
+    pointerStartY = event.clientY;
+  }
+
+  function handlePointerUp(event) {
+    if (!pointerActive) return;
+    pointerActive = false;
+
+    const deltaX = event.clientX - pointerStartX;
+    const deltaY = event.clientY - pointerStartY;
+
+    if (Math.abs(deltaX) < 40 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+
+    if (deltaX < 0) {
+      nextImage();
+    } else {
+      prevImage();
+    }
+  }
+
+  lightbox?.addEventListener('pointerdown', handlePointerDown);
+  lightbox?.addEventListener('pointerup', handlePointerUp);
 
   // Click outside to close
   lightbox?.addEventListener('click', (e) => {
