@@ -1,0 +1,294 @@
+---
+import { getCollection } from 'astro:content';
+import { Image } from 'astro:assets';
+
+const getSlug = (id: string) => id.replace(/\.md$/, '');
+
+const projects = await getCollection('projects');
+const sortedProjects = projects.sort((a, b) => a.data.order - b.data.order);
+
+const inspirationImages = sortedProjects.flatMap((project) => {
+  const title = project.data.title;
+  const location = `${project.data.location}, ${project.data.country}`;
+  const slug = getSlug(project.id);
+
+  const hero = { image: project.data.heroImage, alt: `${title} interior overview`, title, slug, location };
+  const gallery = project.data.gallery.map((img, idx) => ({
+    image: img,
+    alt: `${title} interior detail ${idx + 1}`,
+    title,
+    slug,
+    location,
+  }));
+  return [hero, ...gallery];
+});
+
+function shuffleImages(images: typeof inspirationImages) {
+  const arr = [...images];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+const shuffledImages = shuffleImages(inspirationImages);
+---
+
+<section class="py-12 lg:py-20 bg-black">
+  <div class="container-luxury">
+    {shuffledImages.length > 0 ? (
+      <div class="columns-1 sm:columns-2 lg:columns-3 gap-4 [column-fill:_balance]">
+        {shuffledImages.map((item, index) => (
+          <div
+            class="mb-4 break-inside-avoid opacity-0 translate-y-6 transition duration-700 ease-out inspiration-card"
+            data-index={index}
+            data-src={item.image.src}
+          >
+            <div
+              class="relative overflow-hidden rounded-lg border border-gold/10 bg-black/60 shadow-lg shadow-black/30 group inspiration-item cursor-pointer"
+              data-index={index}
+              data-src={item.image.src}
+              tabindex="0"
+              role="button"
+              aria-label={`View ${item.title}`}
+            >
+              <Image
+                src={item.image}
+                alt={item.alt}
+                class="w-full h-auto transition-transform duration-500 group-hover:scale-105"
+                widths={[480, 640, 840, 1080]}
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                loading={index < 6 ? 'eager' : 'lazy'}
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition duration-400"></div>
+              <div class="absolute left-0 right-0 bottom-0 px-4 py-3 flex items-center justify-between text-sm text-cream/90 opacity-0 group-hover:opacity-100 transition duration-400 gap-3">
+                <div>
+                  <p class="font-serif text-base leading-tight">{item.title}</p>
+                  <p class="text-cream/70 text-xs mt-1">{item.location}</p>
+                </div>
+                <a
+                  href={`/projects/${item.slug}`}
+                  class="text-gold text-xs tracking-wide uppercase border border-gold/40 rounded-full px-3 py-1 hover:bg-gold hover:text-black transition"
+                  data-project-link
+                >
+                  View
+                </a>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p class="text-center text-cream/60">Inspiration images coming soon.</p>
+    )}
+  </div>
+</section>
+
+<script>
+  const cards = Array.from(document.querySelectorAll('.inspiration-card'));
+  const items = Array.from(document.querySelectorAll('.inspiration-item'));
+  const projectLinks = Array.from(document.querySelectorAll('[data-project-link]'));
+
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightbox-img');
+  const lightboxClose = document.getElementById('lightbox-close');
+  const lightboxPrev = document.getElementById('lightbox-prev');
+  const lightboxNext = document.getElementById('lightbox-next');
+  const lightboxCounter = document.getElementById('lightbox-counter');
+
+  let currentIndex = 0;
+  const images = items.map(item => item.dataset.src);
+  let isWheelThrottled = false;
+  let pointerStartX = 0;
+  let pointerStartY = 0;
+  let pointerActive = false;
+
+  if ('IntersectionObserver' in window && cards.length) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.remove('opacity-0', 'translate-y-6');
+            entry.target.classList.add('opacity-100', 'translate-y-0');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    cards.forEach((card) => observer.observe(card));
+  } else {
+    cards.forEach((card) => card.classList.add('opacity-100', 'translate-y-0'));
+  }
+
+  function openLightbox(index) {
+    currentIndex = index;
+    updateLightbox();
+    lightbox?.classList.remove('hidden');
+    lightbox?.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox?.classList.add('hidden');
+    lightbox?.classList.remove('flex');
+    document.body.style.overflow = '';
+  }
+
+  function updateLightbox() {
+    if (lightboxImg) {
+      lightboxImg.src = images[currentIndex];
+      lightboxImg.alt = `${currentIndex + 1} of ${images.length}`;
+    }
+    if (lightboxCounter) {
+      lightboxCounter.textContent = `${currentIndex + 1} / ${images.length}`;
+    }
+  }
+
+  function nextImage() {
+    currentIndex = (currentIndex + 1) % images.length;
+    updateLightbox();
+  }
+
+  function prevImage() {
+    currentIndex = (currentIndex - 1 + images.length) % images.length;
+    updateLightbox();
+  }
+
+  items.forEach((item, index) => {
+    item.addEventListener('click', () => openLightbox(index));
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openLightbox(index);
+      }
+    });
+  });
+
+  projectLinks.forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  });
+
+  lightboxClose?.addEventListener('click', closeLightbox);
+  lightboxNext?.addEventListener('click', nextImage);
+  lightboxPrev?.addEventListener('click', prevImage);
+
+  function handleWheel(event) {
+    if (!lightbox || lightbox.classList.contains('hidden')) return;
+
+    const horizontal = Math.abs(event.deltaX);
+    const vertical = Math.abs(event.deltaY);
+    if (horizontal <= vertical || horizontal < 10) return;
+
+    event.preventDefault();
+    if (isWheelThrottled) return;
+
+    isWheelThrottled = true;
+    if (event.deltaX > 0) {
+      nextImage();
+    } else {
+      prevImage();
+    }
+    setTimeout(() => {
+      isWheelThrottled = false;
+    }, 350);
+  }
+
+  lightbox?.addEventListener('wheel', handleWheel, { passive: false });
+
+  function handlePointerDown(event) {
+    if (!lightbox || lightbox.classList.contains('hidden')) return;
+    pointerActive = true;
+    pointerStartX = event.clientX;
+    pointerStartY = event.clientY;
+  }
+
+  function handlePointerUp(event) {
+    if (!pointerActive) return;
+    pointerActive = false;
+
+    const deltaX = event.clientX - pointerStartX;
+    const deltaY = event.clientY - pointerStartY;
+
+    if (Math.abs(deltaX) < 40 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+
+    if (deltaX < 0) {
+      nextImage();
+    } else {
+      prevImage();
+    }
+  }
+
+  lightbox?.addEventListener('pointerdown', handlePointerDown);
+  lightbox?.addEventListener('pointerup', handlePointerUp);
+
+  lightbox?.addEventListener('click', (e) => {
+    if (e.target === lightbox) {
+      closeLightbox();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!lightbox?.classList.contains('hidden')) {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') nextImage();
+      if (e.key === 'ArrowLeft') prevImage();
+    }
+  });
+</script>
+
+<!-- Lightbox -->
+<div
+  id="lightbox"
+  class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Gallery lightbox"
+>
+  <button
+    id="lightbox-close"
+    class="absolute top-4 right-4 z-10 w-12 h-12 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+    aria-label="Close lightbox"
+  >
+    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  </button>
+
+  <button
+    id="lightbox-prev"
+    class="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+    aria-label="Previous"
+  >
+    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <button
+    id="lightbox-next"
+    class="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+    aria-label="Next"
+  >
+    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+  </button>
+
+  <div class="max-w-[90vw] max-h-[90vh] flex items-center justify-center">
+    <img
+      id="lightbox-img"
+      src=""
+      alt=""
+      class="max-w-full max-h-[85vh] object-contain"
+    />
+  </div>
+
+  <div id="lightbox-counter" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">
+    1 / 1
+  </div>
+</div>

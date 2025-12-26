@@ -1,0 +1,38 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SectionHeading from '../components/common/SectionHeading.astro';
+import InspirationGallery from '../components/home/InspirationGallery.astro';
+import Button from '../components/common/Button.astro';
+---
+
+<Layout
+  title="Inspiration"
+  description="Explore a curated gallery of interiors from By Shakir projects for design inspiration."
+>
+  <section class="pt-32 pb-16 lg:pt-40 lg:pb-20 bg-black">
+    <div class="container-luxury">
+      <SectionHeading
+        subtitle="Design Gallery"
+        title="Explore the Collection"
+      />
+      <p class="max-w-2xl mx-auto text-center text-cream/70 -mt-6">
+        A curated collage of interiors from our projects - perfect for sparking ideas for your own space.
+      </p>
+    </div>
+  </section>
+
+  <InspirationGallery />
+
+  <section class="py-16 lg:py-24 bg-black">
+    <div class="container-luxury">
+      <div class="text-center">
+        <p class="text-cream/70 mb-6">
+          See something you love? Let's create something similar for your space.
+        </p>
+        <Button href="/contact" variant="primary" size="lg">
+          Start Your Project
+        </Button>
+      </div>
+    </div>
+  </section>
+</Layout>
