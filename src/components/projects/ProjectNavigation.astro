@@ -12,11 +12,11 @@ interface Props {
 const { prevProject, nextProject } = Astro.props;
 ---
 
-<nav class="flex items-center justify-between py-8 border-t border-gold/20">
+<nav class="flex flex-wrap items-start sm:items-center justify-between gap-4 py-8 border-t border-gold/20">
   {prevProject ? (
     <a
       href={`/projects/${prevProject.slug}`}
-      class="group flex items-center gap-3 text-cream/70 hover:text-gold transition-colors"
+      class="group flex flex-1 min-w-[0] items-center gap-3 text-cream/70 hover:text-gold transition-colors"
     >
       <svg
         class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform"
@@ -28,7 +28,7 @@ const { prevProject, nextProject } = Astro.props;
       </svg>
       <div class="text-left">
         <p class="text-xs uppercase tracking-wider text-taupe">Previous</p>
-        <p class="font-serif text-lg">{prevProject.title}</p>
+        <p class="font-serif text-lg leading-tight line-clamp-2">{prevProject.title}</p>
       </div>
     </a>
   ) : (
@@ -37,7 +37,7 @@ const { prevProject, nextProject } = Astro.props;
 
   <a
     href="/projects"
-    class="text-gold hover:text-gold-light transition-colors text-sm tracking-wider uppercase"
+    class="order-3 sm:order-none w-full sm:w-auto text-gold hover:text-gold-light transition-colors text-sm tracking-wider uppercase text-center self-center"
   >
     All Projects
   </a>
@@ -45,11 +45,11 @@ const { prevProject, nextProject } = Astro.props;
   {nextProject ? (
     <a
       href={`/projects/${nextProject.slug}`}
-      class="group flex items-center gap-3 text-cream/70 hover:text-gold transition-colors"
+      class="group flex flex-1 min-w-[0] items-center gap-3 text-cream/70 hover:text-gold transition-colors justify-end"
     >
       <div class="text-right">
         <p class="text-xs uppercase tracking-wider text-taupe">Next</p>
-        <p class="font-serif text-lg">{nextProject.title}</p>
+        <p class="font-serif text-lg leading-tight line-clamp-2">{nextProject.title}</p>
       </div>
       <svg
         class="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
